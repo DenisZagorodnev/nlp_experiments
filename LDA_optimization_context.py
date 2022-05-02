@@ -11,27 +11,22 @@ import time
 #nltk.download('averaged_perceptron_tagger')
 import text_preprocessor as txtprpc
 from optimizator import cluster_modeling_calc
+import copy
 
 
 #стоп-слова снаружи
 
 stopwords = txtprpc.get_stopwords_bag("stopwords_aug")
 
-#данные отчета загрузка
+#важные колонки: 'ID поста', 'Текст', 'Эмоциональный окрас', 'Все посты', 'Все комментарии'
 
-data_march_1 = pd.read_excel('./data/Март 1 половина.xlsx', skiprows = 1)
+data_example = pd.read_excel('./data/Пример.xlsx', 'Все комментарии', skiprows=1)
 
-data_march_2 = pd.read_excel('./data/Март 2 половина.xlsx', skiprows = 1)
+data_example['Текст'] = data_example['Текст'].astype(str)
 
-data_march = pd.concat([data_march_1, data_march_2], ignore_index=True)
+#экстра стоп-слова: самые популярные слова корпуса с учетом оценки длины
 
-#важные колонки: 'ID поста', 'Текст', 'Эмоциональный окрас'
-
-data_example = pd.read_excel('./data/Пример.xlsx', 'Выгрузка комментариев к выборке')
-
-#экстра стоп-слова: самые популярные слова корпуса
-
-extra_stopwords = txtprpc.get_freq_n_words(data_example['Текст'], n = 150)
+extra_stopwords = txtprpc.get_freq_n_words(data_example['Текст'].astype(str), n = 50)
 
 
 
@@ -57,7 +52,13 @@ def preproc_line(line, stop_words, extra_stopwords, funcs_seq):
     
     for func in funcs_seq:
         
-        line = func(line)
+        try:
+        
+            line = func(line)
+            
+        except:
+            
+            None
         
     return line
     
@@ -77,7 +78,7 @@ def rm_extra_stopwords(line):
 #в этой версии есть все функции
 
 
-funcs_seq_0 = [txtprpc.find_out_emojies,
+funcs_seq_0 = [#txtprpc.find_out_emojies,
                txtprpc.extract_hren,
                txtprpc.rm_emojies, 
                txtprpc.rm_punctuation, 
@@ -90,14 +91,15 @@ funcs_seq_0 = [txtprpc.find_out_emojies,
                concatter, 
                rm_extra_stopwords, 
                txtprpc.pymorphy_preproc, 
-               concatter, 
-               txtprpc.sub_names, 
-               txtprpc.sub_dates, 
-               txtprpc.sub_addr, 
-               txtprpc.sub_money, 
-               ''.join]
+               concatter
+               #txtprpc.sub_names, 
+               #txtprpc.sub_dates, 
+               #txtprpc.sub_addr, 
+               #txtprpc.sub_money, 
+               #''.join
+               ]
 
-funcs_seq_1 = [txtprpc.find_out_emojies,
+funcs_seq_1 = [#txtprpc.find_out_emojies,
                txtprpc.extract_hren,
                txtprpc.rm_emojies, 
                txtprpc.rm_punctuation, 
@@ -110,12 +112,13 @@ funcs_seq_1 = [txtprpc.find_out_emojies,
                concatter, 
                rm_extra_stopwords, 
                txtprpc.pymorphy_preproc, 
-               concatter, 
-               txtprpc.sub_names, 
-               txtprpc.sub_dates, 
-               txtprpc.sub_addr, 
-               txtprpc.sub_money, 
-               ''.join]
+               concatter
+              # txtprpc.sub_names, 
+               #txtprpc.sub_dates, 
+              # txtprpc.sub_addr, 
+               #txtprpc.sub_money, 
+               #''.join
+               ]
 
 funcs_seq_2 = [txtprpc.rm_emojies, txtprpc.rm_punctuation, txtprpc.rm_special, 
                txtprpc.rm_numbers, txtprpc.make_lowercase, txtprpc.rm_extra_symbols, 
@@ -146,7 +149,7 @@ funcs_seq_4 = [txtprpc.find_out_emojies, txtprpc.rm_emojies, txtprpc.extract_hre
 funcs_seqs = [funcs_seq_0, funcs_seq_1 , funcs_seq_2, funcs_seq_2]
 
 
-#олный препроцессинг корпуса для оптимизации с учетом стоп-слов и последовательности функций
+#полный препроцессинг корпуса для оптимизации с учетом стоп-слов и последовательности функций
 
 def preproc_data(train_data, stop_words, extra_stopwords, content, funcs_seq):
     
@@ -172,8 +175,6 @@ for funcs_seq in funcs_seqs:
 print("--- %s seconds ---" % (time.time() - start_time))
 
     
-     
-    
     
 # In[94]:
     
@@ -188,7 +189,7 @@ results = {'Data №' : 0,
 
 for i in range(len(X_trains)):
     
-    data = X_trains[i]
+    data = copy(X_trains[i])
     
     #для различного количества тем (кластеров)
     
@@ -196,6 +197,8 @@ for i in range(len(X_trains)):
         
         #векторизовали обработанный корпус с выделением n-грамм
     
+        #vectorizer = TfidfVectorizer(ngram_range = (1, 2))
+        
         vectorizer = TfidfVectorizer(ngram_range = (1, 2))
         
         X_train_vect = vectorizer.fit_transform(data)
@@ -238,10 +241,6 @@ for i in range(len(X_trains)):
         print('Data №', i,'num_topics is ', num_topics, 'metric is ', metric_val)
 
 
-
-    
-    
-
 # In[94]:
 
 #применяем полученную на предыдущем шаге лучшую модель
@@ -252,9 +251,9 @@ start_time = time.time()
 
 #векторизовали слова
 
-#vectorizer = TfidfVectorizer(ngram_range = (1, 2))
-
 vectorizer = TfidfVectorizer(ngram_range = (1, 2))
+
+#vectorizer = TfidfVectorizer()
 
 X_train_vect = vectorizer.fit_transform(X_train)
 
@@ -270,9 +269,11 @@ prediction = np.matrix(lda.transform(X_train_vect)).argmax(axis=1)
 
 #data_example['predicted_clusters'] = [row[0] for row in np.asarray(prediction)]
 
+[row[0] for row in np.asarray(prediction)]
+
 #число отображаемых ключевых слов кластеров
 
-n_top_words = 15
+n_top_words = 30
 
 #вынем ключевые слова и напечатаем рядом с соответствующим кластером
 
@@ -301,9 +302,16 @@ print("--- %s seconds ---" % (time.time() - start_time))
 
 # In[94]:
     
+
+#По поводу отчёта: я тебе как раз образец того, как он должен выглядеть прислал.
+#Сравнение нужно для калибровки модели и исследовательского текста (ВКР)
+#А с точки зрения продукта: на входе excel с постами и комментариями (два листа), 
+#на выходе примерно то, что прислал    
+
     
-    
-    
+#вычисление эмоции выделенных слов
+
+
     
     
     

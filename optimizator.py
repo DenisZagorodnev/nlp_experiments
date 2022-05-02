@@ -34,6 +34,28 @@ def cluster_modeling_calc(X_train_vect, topic_words, prediction, vectorizer):
     #Среднее косинусное расстояние векторизованных tfidf слов внутри тем, что эквивалентно понятию энтропии в теории информации
         
     mean_cos_dist = np.mean(cosin_dists)
+    
+    
+    
+    #расстояния Кульбака-Лейблера матрица
+    
+    kl_matrixform = []
+    
+    for i in range(len(topic_words.items())):
+        
+        for j in range(len(topic_words.items())):
+            
+            try:
+            
+                kl_matrixform.append(metrices.kl_divergence(' '.join(topic_words[i]), ' '.join(topic_words[j])))
+                
+            except:
+                
+                kl_matrixform.append(0.5)
+                
+                
+       
+    mean_kl_matrixform = np.mean(kl_matrixform)    
        
         
     #Среднее косинусное расстояние тем
@@ -63,7 +85,7 @@ def cluster_modeling_calc(X_train_vect, topic_words, prediction, vectorizer):
    
     #метрика, нужная для задачи максимизации (свертка трех показателей) 
         
-    result_score = 0.33*mean_cos_dist + 0.33*mean_cos_dist_global + 0.33*silhouette
+    result_score = 0.33*mean_cos_dist + 0.33*mean_cos_dist_global + 0.33*silhouette + 0*mean_kl_matrixform
    
     return result_score
     

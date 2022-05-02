@@ -22,7 +22,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 #nltk.download('averaged_perceptron_tagger')
 
 from textblob import TextBlob
-from sklearn.metrics import silhouette_score, pairwise_distances
+from sklearn.metrics import silhouette_score, pairwise_distances, mutual_info_score
 import numpy as np
 
 
@@ -98,10 +98,25 @@ def get_freq_n_words(corpus, n = None):
     
     return [list(elem)[0] for elem in words_freq[:n]]
 
+#метрика Кульбака-Лейблера
 
-
-def avg_kl(X_train_vect, prediction): 
+def kl_divergence(line_1, line_2):
     
-    return silhouette_score(X_train_vect,  np.asarray(prediction))
+    WORD = re.compile(r"\w+")
+    
+    words_1 = WORD.findall(line_1)
+    
+    line_1 = Counter(words_1)
+    
+    words_2 = WORD.findall(line_2)
+    
+    line_2 = Counter(words_2)
+    
+    div = mutual_info_score(np.asarray(line_1),  np.asarray(line_2))
+    
+
+    return div
+
+
 
 
