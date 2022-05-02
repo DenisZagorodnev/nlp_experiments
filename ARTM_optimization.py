@@ -11,6 +11,9 @@ import time
 #nltk.download('averaged_perceptron_tagger')
 import text_preprocessor as txtprpc
 from optimizator import cluster_modeling_calc
+import bigartm
+
+from bigartm import ARTM
 
 
 #стоп-слова снаружи
@@ -31,7 +34,8 @@ data_example = pd.read_excel('./data/Пример.xlsx', 'Выгрузка ко�
 
 #экстра стоп-слова: самые популярные слова корпуса
 
-extra_stopwords = txtprpc.get_freq_n_words(data_example['Текст'], n = 150)
+extra_stopwords = txtprpc.get_freq_n_words(data_march ['Текст'], n = 100)
+
 
 
 
@@ -76,27 +80,6 @@ def rm_extra_stopwords(line):
 #последовательность функций, формирующих предобработку
 #в этой версии есть все функции
 
-
-funcs_seq_0 = [txtprpc.find_out_emojies,
-               txtprpc.extract_hren,
-               txtprpc.rm_emojies, 
-               txtprpc.rm_punctuation, 
-               txtprpc.rm_special, 
-               txtprpc.rm_numbers, 
-               txtprpc.make_lowercase, 
-               txtprpc.rm_extra_symbols,
-               #txtprpc.count_languages_chardet,
-               rm_stopwords, 
-               concatter, 
-               rm_extra_stopwords, 
-               txtprpc.pymorphy_preproc, 
-               concatter, 
-               txtprpc.sub_names, 
-               txtprpc.sub_dates, 
-               txtprpc.sub_addr, 
-               txtprpc.sub_money, 
-               ''.join]
-
 funcs_seq_1 = [txtprpc.find_out_emojies,
                txtprpc.extract_hren,
                txtprpc.rm_emojies, 
@@ -105,7 +88,7 @@ funcs_seq_1 = [txtprpc.find_out_emojies,
                txtprpc.rm_numbers, 
                txtprpc.make_lowercase, 
                txtprpc.rm_extra_symbols,
-              # txtprpc.count_languages_chardet,
+               txtprpc.count_languages_chardet,
                rm_stopwords, 
                concatter, 
                rm_extra_stopwords, 
@@ -119,9 +102,6 @@ funcs_seq_1 = [txtprpc.find_out_emojies,
 
 funcs_seq_2 = [txtprpc.rm_emojies, txtprpc.rm_punctuation, txtprpc.rm_special, 
                txtprpc.rm_numbers, txtprpc.make_lowercase, txtprpc.rm_extra_symbols, 
-               rm_stopwords, 
-               concatter, 
-               rm_extra_stopwords, 
                splitter,  
                txtprpc.pymorphy_preproc, 
                concatter, txtprpc.sub_names, txtprpc.sub_dates, txtprpc.sub_addr, txtprpc.sub_money, ''.join]
@@ -143,7 +123,7 @@ funcs_seq_4 = [txtprpc.find_out_emojies, txtprpc.rm_emojies, txtprpc.extract_hre
 
 
 
-funcs_seqs = [funcs_seq_0, funcs_seq_1 , funcs_seq_2, funcs_seq_2]
+funcs_seqs = [funcs_seq_1 , funcs_seq_2, funcs_seq_2]
 
 
 #олный препроцессинг корпуса для оптимизации с учетом стоп-слов и последовательности функций
@@ -171,8 +151,6 @@ for funcs_seq in funcs_seqs:
 
 print("--- %s seconds ---" % (time.time() - start_time))
 
-    
-     
     
     
 # In[94]:
@@ -202,7 +180,7 @@ for i in range(len(X_trains)):
         
         #алгоритм кластеризации LatentDirichletAllocation
         
-        lda = LDA(n_components=num_topics,random_state=17, n_jobs = -1)
+        lda = artm.ARTM(n_components=num_topics,random_state=17, n_jobs = -1)
         
         lda.fit(X_train_vect)
         
@@ -252,13 +230,11 @@ start_time = time.time()
 
 #векторизовали слова
 
-#vectorizer = TfidfVectorizer(ngram_range = (1, 2))
-
 vectorizer = TfidfVectorizer(ngram_range = (1, 2))
 
 X_train_vect = vectorizer.fit_transform(X_train)
 
-lda = LDA(n_components = results['num_topics'],random_state=17, n_jobs = -1)
+lda = artm.ARTM(n_components = results['num_topics'],random_state=17, n_jobs = -1)
 
 #обучили на векторизованном корпусе
 
@@ -272,7 +248,7 @@ prediction = np.matrix(lda.transform(X_train_vect)).argmax(axis=1)
 
 #число отображаемых ключевых слов кластеров
 
-n_top_words = 15
+n_top_words = 5
 
 #вынем ключевые слова и напечатаем рядом с соответствующим кластером
 
@@ -294,26 +270,4 @@ for topic, words in topic_words.items():
 
 
 print("--- %s seconds ---" % (time.time() - start_time))
-
-
-
-
-
-# In[94]:
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
 
